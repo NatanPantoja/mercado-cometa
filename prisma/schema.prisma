@@ -1,0 +1,236 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+enum Role {
+    ADMIN
+    CAIXA
+}
+
+enum PaymentMethod {
+    CASH
+    CREDIT_CARD
+    DEBIT_CARD
+    PIX
+}
+
+enum NotificationType {
+    EXPIRING_LOT
+    LOW_STOCK
+    NO_SALES
+}
+
+enum SaleStatus {
+    COMPLETED
+    CANCELED
+}
+
+enum ExpenseCategory {
+    RENT
+    UTILITIES
+    SALARIES
+    TAXES
+    OTHER
+}
+
+enum Unit {
+    UN // Unidade
+    KG // Quilo
+    L // Litro
+    M // Metro
+    CX // Caixa
+    PCT // Pacote
+}
+
+// --- MODELOS ---
+
+model User {
+    id        String   @id @default(uuid())
+    name      String
+    email     String   @unique
+    password  String
+    role      Role     @default(CAIXA)
+    isActive  Boolean  @default(true) // Para "soft delete" se necessário
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    sales            Sale[]
+    stockAdjustments StockAdjustment[]
+    expenses         Expense[]
+    refreshTokens    RefreshToken[]
+    auditLogs        AuditLog[]
+}
+
+// Tabela para Rotação de Refresh Tokens (Segurança)
+model RefreshToken {
+    id          String   @id @default(uuid())
+    hashedToken String
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    revoked     Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    expiresAt   DateTime
+}
+
+// Auditoria (Quem fez o quê e quando)
+model AuditLog {
+    id        String   @id @default(uuid())
+    action    String // Ex: "CREATE_PRODUCT", "DELETE_USER"
+    entity    String // Ex: "Product", "User"
+    entityId  String // ID do item alterado
+    details   String?  @db.Text // JSON stringificado com detalhes
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+}
+
+model Category {
+    id       String    @id @default(uuid())
+    name     String    @unique
+    products Product[]
+}
+
+model Supplier {
+    id       String    @id @default(uuid())
+    name     String
+    cnpj     String?
+    contact  String?
+    email    String?
+    products Product[]
+}
+
+model Product {
+    id          String   @id @default(uuid())
+    name        String
+    description String?  @db.Text
+    imageUrl    String? // URL da imagem
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id])
+
+    supplierId String
+    supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+    variants ProductVariant[]
+}
+
+model ProductVariant {
+    id      String  @id @default(uuid())
+    name    String // Ex: "Sabor Morango"
+    sku     String  @unique
+    barcode String? @unique
+    unit    Unit    @default(UN) // Ex: KG, UN
+
+    price Decimal @db.Decimal(10, 2) // Preço de Venda Atual
+    cost  Decimal @db.Decimal(10, 2) // Custo Médio Atual (para referência)
+
+    stock    Int @default(0)
+    minStock Int @default(5) // Alerta de estoque baixo
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    lots             Lot[]
+    saleItems        SaleItem[]
+    stockAdjustments StockAdjustment[]
+}
+
+model Lot {
+    id              String    @id @default(uuid())
+    quantity        Int // Quantidade ATUAL no lote
+    initialQty      Int // Quantidade INICIAL (para histórico)
+    expirationDate  DateTime
+    manufactureDate DateTime?
+    costPrice       Decimal   @db.Decimal(10, 2) // Custo específico deste lote
+
+    createdAt DateTime @default(now())
+
+    variantId String
+    variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+    saleItems        SaleItem[]
+    stockAdjustments StockAdjustment[]
+    notifications    Notification[]
+}
+
+model Sale {
+    id            String        @id @default(uuid())
+    total         Decimal       @db.Decimal(10, 2)
+    amountPaid    Decimal?      @db.Decimal(10, 2)
+    change        Decimal?      @db.Decimal(10, 2)
+    paymentMethod PaymentMethod
+    status        SaleStatus    @default(COMPLETED)
+    createdAt     DateTime      @default(now())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    items SaleItem[]
+}
+
+model SaleItem {
+    id       String @id @default(uuid())
+    quantity Int
+
+    // Snapshot de preços no momento da venda (importante para relatórios futuros)
+    unitPrice Decimal @db.Decimal(10, 2)
+    costPrice Decimal @db.Decimal(10, 2)
+
+    saleId String
+    sale   Sale   @relation(fields: [saleId], references: [id])
+
+    variantId String
+    variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+    lotId String
+    lot   Lot    @relation(fields: [lotId], references: [id])
+}
+
+model Notification {
+    id        String           @id @default(uuid())
+    type      NotificationType
+    message   String           @db.Text
+    read      Boolean          @default(false)
+    createdAt DateTime         @default(now())
+
+    lotId String?
+    lot   Lot?    @relation(fields: [lotId], references: [id])
+}
+
+model StockAdjustment {
+    id        String   @id @default(uuid())
+    quantity  Int // Positivo (entrada) ou Negativo (perda/roubo/ajuste)
+    reason    String
+    createdAt DateTime @default(now())
+
+    variantId String
+    variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+    lotId String
+    lot   Lot    @relation(fields: [lotId], references: [id])
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+}
+
+model Expense {
+    id          String          @id @default(uuid())
+    description String
+    amount      Decimal         @db.Decimal(10, 2)
+    category    ExpenseCategory
+    date        DateTime        @default(now())
+    userId      String
+    user        User            @relation(fields: [userId], references: [id])
+}
