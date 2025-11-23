@@ -7,7 +7,6 @@ interface TokenPayload {
   role: "ADMIN" | "CAIXA";
 }
 
-// 👇 VERIFIQUE SE A PALAVRA 'export' ESTÁ AQUI
 export function ensureAuthenticated(
   req: Request,
   res: Response,
