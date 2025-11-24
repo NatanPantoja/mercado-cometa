@@ -1,14 +1,35 @@
 import express from "express";
-import { prisma } from "./config/prisma"; // <--- Importa a conexão aqui
+import { prisma } from "./config/prisma";
+import cors from "cors";
+import helmet from "helmet";
+import { userRoutes } from "./routes/user.routes";
+import { authRoutes } from "./routes/auth.routes";
+import { categoryRoutes } from "./routes/category.routes";
+import { supplierRoutes } from "./routes/supplier.routes";
+import { productRoutes } from "./routes/product.routes";
+import { variantRoutes } from "./routes/variant.routes";
+import { lotRoutes } from "./routes/lot.routes";
+import { saleRoutes } from "./routes/sale.routes";
+import { alertRoutes } from "./routes/alert.routes";
 
 const app = express();
-const PORT = 3000;
+app.use(helmet());
+app.use(cors());
+const PORT = process.env.PORT || 3333;
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({ message: "API Mercadinho funcionando!" });
-});
+//ROUTES
+
+app.use("/users", userRoutes);
+app.use("/auth", authRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/suppliers", supplierRoutes);
+app.use("/products", productRoutes);
+app.use("/variants", variantRoutes);
+app.use("/lots", lotRoutes);
+app.use("/sales", saleRoutes);
+app.use("/alerts", alertRoutes);
 
 // Inicia o servidor
 async function main() {

@@ -1,5 +1,4 @@
-// src/repositories/supplier.repository.ts
-import { prisma } from "../lib/prisma";
+import { prisma } from "../config/prisma";
 import { z } from "zod"; // 1. Importar o Zod
 import { createSupplierSchema } from "../schemas/supplier.schema"; // 2. Importar o Schema
 

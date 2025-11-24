@@ -1,32 +1,39 @@
-import { hash } from "bcryptjs";
-import { User } from "@prisma/client";
-import { UserRepository } from "../repositories/user.repository";
+import { hash } from "bcryptjs"; // <--- Importante!
 import { z } from "zod";
 import { createUserSchema } from "../schemas/user.schema";
+import { UserRepository } from "../repositories/user.repository";
 
-// Esta é a mágica! Criamos o tipo diretamente a partir do schema do Zod.
-// Agora, o tipo de entrada do nosso serviço é EXATAMENTE o que o Zod produz.
+// Infere o tipo a partir do schema do Zod
 type UserCreateData = z.infer<typeof createUserSchema>;
 
 export const UserService = {
-  // O Promise agora retorna um usuário SEM a senha
-  async create(data: UserCreateData): Promise<Omit<User, "password">> {
-    const existingUser = await UserRepository.findByEmail(data.email);
-    if (existingUser) {
-      throw new Error("Este e-mail já está em uso.");
+  async create(data: UserCreateData) {
+    // 1. Verificar se o e-mail já existe
+    const userAlreadyExists = await UserRepository.findByEmail(data.email);
+
+    if (userAlreadyExists) {
+      throw new Error("E-mail já cadastrado.");
     }
 
-    const hashedPassword = await hash(data.password, 10);
+    // 2. Criptografar a senha (Hash)
+    // O número 8 é o "salt", o custo do processamento.
+    const passwordHash = await hash(data.password, 8);
 
-    const user = await UserRepository.create({
+    // 3. Criar o usuário com a senha criptografada
+    const newUser = await UserRepository.create({
       name: data.name,
       email: data.email,
-      role: data.role, // O Zod já garante que a role é 'ADMIN' ou 'CAIXA'
-      password: hashedPassword,
+      password: passwordHash, // Salva o hash, não a senha original!
+      role: data.role || "CAIXA", // Se não vier role, assume CAIXA
     });
 
-    // Remove a senha antes de retornar os dados
-    const { password, ...userWithoutPassword } = user;
+    // 4. Retornar o usuário (removemos a senha do retorno manual se quiser, ou retornamos tudo)
+    // Por segurança, vamos retornar sem a senha
+    const { password, ...userWithoutPassword } = newUser;
     return userWithoutPassword;
+  },
+
+  async findAll() {
+    return UserRepository.findAll();
   },
 };
