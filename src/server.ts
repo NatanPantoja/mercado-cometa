@@ -11,6 +11,7 @@ import { variantRoutes } from "./routes/variant.routes";
 import { lotRoutes } from "./routes/lot.routes";
 import { saleRoutes } from "./routes/sale.routes";
 import { alertRoutes } from "./routes/alert.routes";
+import { dashboardRoutes } from "./routes/dashboard.routes";
 
 const app = express();
 app.use(helmet());
@@ -30,6 +31,7 @@ app.use("/variants", variantRoutes);
 app.use("/lots", lotRoutes);
 app.use("/sales", saleRoutes);
 app.use("/alerts", alertRoutes);
+app.use("/dashboard", dashboardRoutes);
 
 // Inicia o servidor
 async function main() {
