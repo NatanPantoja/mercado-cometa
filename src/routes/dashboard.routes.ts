@@ -5,12 +5,25 @@ import { ensureAdmin } from "../middlewares/ensureAdmin.middleware";
 
 const dashboardRoutes = Router();
 
-// Apenas ADMIN pode ver o dashboard geral
 dashboardRoutes.get(
   "/",
   ensureAuthenticated,
   ensureAdmin,
   DashboardController.getDashboard
+);
+
+// Endpoints opcionais
+dashboardRoutes.get(
+  "/bottom-products",
+  ensureAuthenticated,
+  ensureAdmin,
+  DashboardController.getBottomProducts
+);
+dashboardRoutes.get(
+  "/monthly-sales",
+  ensureAuthenticated,
+  ensureAdmin,
+  DashboardController.getMonthlySales
 );
 
 export { dashboardRoutes };
