@@ -15,7 +15,11 @@ import { dashboardRoutes } from "./routes/dashboard.routes";
 
 const app = express();
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // fazendo isso, apenas o frontend nessa origem poderá acessar a API
+  })
+);
 const PORT = process.env.PORT || 3333;
 
 app.use(express.json());

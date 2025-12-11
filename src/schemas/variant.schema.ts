@@ -11,9 +11,13 @@ export const createVariantSchema = z.object({
   // Transformamos a string que vem do JSON em número para salvar no banco
   price: z.number().min(0, "O preço não pode ser negativo."),
   cost: z.number().min(0, "O custo não pode ser negativo."),
+  stock: z.number().int().min(0, "O estoque não pode ser negativo.").default(0),
   minStock: z.number().int().default(5),
 
   unit: UnitEnum.default("UN"),
 
   productId: z.string().uuid("ID do produto inválido."),
 });
+
+// NOVO: Schema de atualização (todos os campos opcionais)
+export const updateVariantSchema = createVariantSchema.partial();

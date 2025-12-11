@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma"; // Ajustado para o caminho correto
+import { prisma } from "../config/prisma";
 import { Prisma } from "@prisma/client";
 
 export const ProductRepository = {
@@ -10,9 +10,12 @@ export const ProductRepository = {
 
   async findAll() {
     return prisma.product.findMany({
+      where: {
+        is_active: true, // Certifique-se que criou esse campo no schema.prisma
+      },
       include: {
-        category: true, // Traz os dados da categoria junto
-        supplier: true, // Traz os dados do fornecedor junto
+        category: true,
+        supplier: true,
       },
       orderBy: {
         name: "asc",
@@ -27,6 +30,16 @@ export const ProductRepository = {
         category: true,
         supplier: true,
         variants: true, // Já traz as variantes se tiver (para o futuro)
+      },
+    });
+  },
+
+  // Novo método para Soft Delete
+  async softDelete(id: string) {
+    return prisma.product.update({
+      where: { id },
+      data: {
+        is_active: false, // Apenas desativa
       },
     });
   },

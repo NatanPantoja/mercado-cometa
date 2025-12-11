@@ -9,5 +9,7 @@ variantRoutes.use(ensureAuthenticated);
 
 variantRoutes.get("/", VariantController.findAll);
 variantRoutes.post("/", ensureAdmin, VariantController.create);
+variantRoutes.get("/barcode/:code", VariantController.getByBarcode);
+variantRoutes.put("/:id", ensureAdmin, VariantController.update);
 
 export { variantRoutes };

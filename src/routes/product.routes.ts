@@ -13,4 +13,7 @@ productRoutes.get("/", ProductController.findAll);
 // Criar produto (Só ADMIN)
 productRoutes.post("/", ensureAdmin, ProductController.create);
 
+// Deletar produto (Só ADMIN)
+productRoutes.delete("/:id", ensureAdmin, ProductController.delete);
+
 export { productRoutes };
